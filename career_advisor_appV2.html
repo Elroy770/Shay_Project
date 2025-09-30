@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>יועץ קריירה AI - מצא את המקצוע המתאים לך</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 2.2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .helper-text {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 200px;
+            transition: border-color 0.3s;
+            line-height: 1.6;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .info-box {
+            background: #e8f4ff;
+            border-right: 4px solid #3498db;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .info-box strong {
+            color: #2980b9;
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        #results {
+            margin-top: 40px;
+            display: none;
+        }
+
+        #results.active {
+            display: block;
+        }
+
+        .career-card {
+            background: #f8f9ff;
+            border-right: 5px solid #667eea;
+            padding: 25px;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .career-card:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+
+        .career-title {
+            color: #667eea;
+            font-size: 1.6em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .career-section {
+            margin-bottom: 15px;
+        }
+
+        .career-section-title {
+            color: #555;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .career-section-content {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .salary-range {
+            background: #667eea;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .steps-list {
+            padding-right: 20px;
+        }
+
+        .steps-list li {
+            margin-bottom: 8px;
+            color: #666;
+        }
+
+        .back-button {
+            background: #6c757d;
+            margin-top: 20px;
+        }
+
+        .back-button:hover {
+            background: #5a6268;
+        }
+
+        .error-message {
+            background: #ffe0e0;
+            border: 2px solid #ff6b6b;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 יועץ קריירה AI</h1>
+        <p class="subtitle">ספר לנו עליך ו-AI ימליץ על המקצועות המתאימים ביותר</p>
+        
+        <form id="careerForm">
+            <!-- תיבת מידע -->
+            <div class="info-box">
+                <p><strong>איך זה עובד?</strong></p>
+                <p>כתוב טקסט חופשי על עצמך - מה אתה אוהב לעשות, מה הכישורים שלך, מה מעניין אותך, מה החוזקות והחלשות שלך.</p>
+                <p>ה-AI ינתח את הטקסט ויציע לך 3 מקצועות מתאימים עם מסלול מפורט וטווח משכורות.</p>
+            </div>
+
+            <!-- אזור הטקסט החופשי -->
+            <div class="form-group">
+                <label for="userText">ספר/י לנו על עצמך:</label>
+                <textarea 
+                    id="userText" 
+                    name="userText" 
+                    placeholder="לדוגמה: אני בן 25, אוהב מחשבים ולפתור בעיות מורכבות. למדתי מתמטיקה באוניברסיטה ויש לי ניסיון בתכנות Python. אני אדם אנליטי שנהנה לעבוד עם נתונים ולמצוא תבניות. אני מעדיף לעבוד באופן עצמאי אבל גם יודע לעבוד בצוות. אני מחפש תחום שבו אוכל לשלב יצירתיות עם חשיבה לוגית..."
+                    required
+                ></textarea>
+                <p class="helper-text">כתוב לפחות 3-4 משפטים כדי שה-AI יוכל לנתח טוב יותר</p>
+            </div>
+
+            <button type="submit" id="submitBtn">🔍 מצא מקצועות מתאימים</button>
+
+            <!-- הודעת טעינה -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p class="loading-text">ה-AI מנתח את הטקסט שלך ומחפש מקצועות מתאימים...</p>
+            </div>
+
+            <!-- הודעת שגיאה -->
+            <div class="error-message" id="errorMessage"></div>
+        </form>
+
+        <!-- תוצאות -->
+        <div id="results">
+            <h2 style="color: #667eea; margin-bottom: 25px; text-align: center;">המקצועות המומלצים עבורך:</h2>
+            <div id="careersContainer"></div>
+            <button class="back-button" onclick="resetForm()">🔄 חיפוש חדש</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
