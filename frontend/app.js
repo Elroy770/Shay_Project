@@ -82,6 +82,65 @@ function hideError() {
     errorDiv.classList.remove('active');
 }
 
+// פונקציה להשגת היסטוריית חיפושים
+async function fetchHistory(limit = 20) {
+    try {
+        const response = await fetch(`http://localhost:3000/api/history?limit=${limit}`);
+        if (!response.ok) {
+            throw new Error('שגיאת שרת בהשגת היסטוריה');
+        }
+        const data = await response.json();
+        return data.rows || [];
+    } catch (err) {
+        console.error('fetchHistory error:', err);
+        return [];
+    }
+}
+
+// יצירת אלמנט היסטוריה בודד
+function createHistoryItem(item) {
+    const careers = (item.ai_response?.careers || [])
+        .map(career => `<div class="career-card">${createCareerCard(career)}</div>`)
+        .join('');
+
+    return `
+        <div class="history-item" style="border:1px solid #eee; padding:12px; margin-bottom:12px; border-radius:8px;">
+            <div style="color:#333; font-weight:600; margin-bottom:8px;">
+                ${new Date(item.created_at).toLocaleString()}
+            </div>
+            <div style="color:#555; margin-bottom:8px;">
+                <strong>טקסט משתמש:</strong> 
+                ${item.user_text.slice(0, 300)}${item.user_text.length > 300 ? '…' : ''}
+            </div>
+            <div><strong>תשובת AI:</strong></div>
+            <div>${careers || '<div style="color:#666;">אין נתונים</div>'}</div>
+        </div>
+    `;
+}
+
+// פונקציה להצגת היסטוריה
+async function showHistory() {
+    const historySection = document.getElementById('historySection');
+    const historyContainer = document.getElementById('historyContainer');
+    
+    if (historySection.style.display === 'none') {
+        historySection.style.display = 'block';
+        historyContainer.innerHTML = '<p style="color:#667eea;">טוען...</p>';
+        
+        const historyItems = await fetchHistory(20);
+        if (historyItems.length === 0) {
+            historyContainer.innerHTML = '<p style="color:#666; text-align: center;">לא נמצאו רשומות בהיסטוריה</p>';
+        } else {
+            historyContainer.innerHTML = historyItems.map(createHistoryItem).join('');
+        }
+        
+        // גלילה חלקה לאזור ההיסטוריה
+        historySection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+        historySection.style.display = 'none';
+    }
+}
+
 /**
  * איפוס הטופס וחזרה למצב התחלתי
  */
@@ -89,6 +148,7 @@ function resetForm() {
     document.getElementById('userText').value = '';
     document.getElementById('careerForm').style.display = 'block';
     document.getElementById('results').classList.remove('active');
+    document.getElementById('historySection').style.display = 'none';
     hideError();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
