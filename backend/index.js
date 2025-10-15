@@ -1,4 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Ensure we load the .env file that sits next to this file regardless of CWD
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: `${__dirname}/.env` });
 import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
