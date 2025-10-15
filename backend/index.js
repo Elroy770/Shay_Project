@@ -30,6 +30,22 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
+// Startup environment validation
+const requiredEnvs = [
+  { name: 'DB_HOST', value: process.env.DB_HOST },
+  { name: 'DB_USER', value: process.env.DB_USER },
+  { name: 'DB_PASSWORD', value: process.env.DB_PASSWORD },
+  { name: 'DB_NAME', value: process.env.DB_NAME },
+  { name: 'OPENAI_API_KEY', value: process.env.OPENAI_API_KEY }
+];
+
+const missing = requiredEnvs.filter(e => !e.value || e.value.toString().trim() === '').map(e => e.name);
+if (missing.length) {
+  console.error('Missing required environment variables:', missing.join(', '));
+  console.error('Please provide them via backend/.env or environment (see README_DOCKER.md)');
+  process.exit(1);
+}
+
 // Initialize database: create the database if it doesn't exist, then create the table.
 const initDB = async () => {
   const dbName = process.env.DB_NAME || 'Shay_Project';
