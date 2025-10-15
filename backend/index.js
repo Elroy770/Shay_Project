@@ -30,12 +30,35 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Initialize database
+// Initialize database: create the database if it doesn't exist, then create the table.
 const initDB = async () => {
-  const createTableQuery = 'CREATE TABLE IF NOT EXISTS ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)';
+  const dbName = process.env.DB_NAME || 'Shay_Project';
+
+  // Create a temporary pool without a default database to ensure the DB exists
+  const tmpPool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    waitForConnections: true,
+    connectionLimit: 1
+  });
+
   try {
-    await pool.query(createTableQuery);
-    console.log('Database initialized successfully');
+    await tmpPool.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+    await tmpPool.end();
+
+    // Try to create table with JSON column; if the server doesn't support JSON, fall back to LONGTEXT
+    const createTableJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+    const createTableText = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response LONGTEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+
+    try {
+      await pool.query(createTableJSON);
+      console.log('Database and table (with JSON column) initialized successfully');
+    } catch (jsonErr) {
+      console.warn('JSON column not supported, falling back to LONGTEXT for ai_response:', jsonErr.message);
+      await pool.query(createTableText);
+      console.log('Database and table (with LONGTEXT column) initialized successfully');
+    }
   } catch (error) {
     console.error('Database initialization error:', error);
   }
