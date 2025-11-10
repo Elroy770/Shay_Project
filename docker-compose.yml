@@ -6,7 +6,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
-      - ./backend/.env
+      - ./backend/.env.docker.example
     environment:
       DB_HOST: mysql
       DB_USER: root
