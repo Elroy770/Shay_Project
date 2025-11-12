@@ -2,6 +2,7 @@
 
 services:
   backend:
+    platform: linux/amd64
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -10,7 +11,7 @@ services:
     environment:
       DB_HOST: mysql
       DB_USER: root
-      DB_PASSWORD: example_root_password
+      DB_PASSWORD: example_root_password # Shay-150721
       DB_NAME: Shay_Project
     ports:
       - "3000:3000"
@@ -23,6 +24,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    platform: linux/amd64
     ports:
       - "8080:80"
     restart: unless-stopped
