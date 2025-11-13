@@ -1,7 +1,12 @@
 // הגדרות API למול השרת המקומי
 const API_CONFIG = {
-    url: 'http://localhost:3000/api/career-recommendations'
+  url:
+    window.location.hostname === 'localhost'
+      ? 'http://localhost:3000/api/career-recommendations'
+      : `http://${window.location.hostname}:3000/api/career-recommendations`
 };
+
+
 
 /**
  * בניית ה-prompt שיישלח ל-OpenAI
@@ -85,10 +90,18 @@ function hideError() {
 // פונקציה להשגת היסטוריית חיפושים
 async function fetchHistory(limit = 20) {
     try {
-        const response = await fetch(`http://localhost:3000/api/history?limit=${limit}`);
+        // בודק אם זה רץ בלוקאל או בשרת, ובונה את ה-URL בהתאם
+        const API_BASE_URL =
+            window.location.hostname === 'localhost'
+                ? 'http://localhost:3000'
+                : `http://${window.location.hostname}:3000`;
+
+        const response = await fetch(`${API_BASE_URL}/api/history?limit=${limit}`);
+
         if (!response.ok) {
             throw new Error('שגיאת שרת בהשגת היסטוריה');
         }
+
         const data = await response.json();
         return data.rows || [];
     } catch (err) {
@@ -96,6 +109,7 @@ async function fetchHistory(limit = 20) {
         return [];
     }
 }
+
 
 // יצירת אלמנט היסטוריה בודד
 function createHistoryItem(item) {
