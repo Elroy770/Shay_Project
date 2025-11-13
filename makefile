@@ -27,7 +27,7 @@ build:
 		--platform linux/amd64,linux/arm64 \
 		-t $(IMAGE):$(TAG) \
 		--push \
-		~/Desktop/Shay_Project/backend/
+		$(shell find ~ -type d -name backend -print -quit)
 	@echo "✅ Built and pushed multi-platform image: $(IMAGE):$(TAG)"
 
 
