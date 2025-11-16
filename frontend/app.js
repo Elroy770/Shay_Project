@@ -90,6 +90,7 @@ function hideError() {
 // פונקציה להשגת היסטוריית חיפושים
 async function fetchHistory(limit = 20) {
     try {
+<<<<<<< HEAD
         // בודק אם זה רץ בלוקאל או בשרת, ובונה את ה-URL בהתאם
         const API_BASE_URL =
             window.location.hostname === 'localhost'
@@ -102,6 +103,12 @@ async function fetchHistory(limit = 20) {
             throw new Error('שגיאת שרת בהשגת היסטוריה');
         }
 
+=======
+        const response = await fetch(`http://localhost:3000/api/history?limit=${limit}`);
+        if (!response.ok) {
+            throw new Error('שגיאת שרת בהשגת היסטוריה');
+        }
+>>>>>>> 9c56b505a9dd65f2c80368d2c25ef1f2c80303ea
         const data = await response.json();
         return data.rows || [];
     } catch (err) {
@@ -110,7 +117,10 @@ async function fetchHistory(limit = 20) {
     }
 }
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9c56b505a9dd65f2c80368d2c25ef1f2c80303ea
 // יצירת אלמנט היסטוריה בודד
 function createHistoryItem(item) {
     const careers = (item.ai_response?.careers || [])
