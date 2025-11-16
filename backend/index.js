@@ -30,12 +30,11 @@ const pool = mysql.createPool({
   queueLimit: 0
 });
 
-// Startup environment validation
+// Startup environment validation (DB_NAME is optional)
 const requiredEnvs = [
   { name: 'DB_HOST', value: process.env.DB_HOST },
   { name: 'DB_USER', value: process.env.DB_USER },
   { name: 'DB_PASSWORD', value: process.env.DB_PASSWORD },
-  { name: 'DB_NAME', value: process.env.DB_NAME },
   { name: 'OPENAI_API_KEY', value: process.env.OPENAI_API_KEY }
 ];
 
