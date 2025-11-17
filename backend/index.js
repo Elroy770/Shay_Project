@@ -14,6 +14,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/api/hello", (req, res) => {
+    res.send("Hello from backend!");
+});
+
 const PORT = process.env.PORT || 3000;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
@@ -204,6 +208,7 @@ app.get('/api/history', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+// Cloud Run חייב להאזין לכולם
+app.listen(PORT, "0.0.0.0", () => {
+    console.log("Backend listening on port", PORT);
 });

@@ -7,8 +7,11 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy frontend files
 COPY . /usr/share/nginx/html
 
+# נשמור את התבנית בצד
+COPY config.template.json /config.template.json
+
 # Expose default nginx port
 EXPOSE 80
 
-# Use the default nginx command
-CMD ["nginx", "-g", "daemon off;"]
+# בזמן ריצה: נחליף את $API_URL בקובץ אמיתי
+CMD sh -c 'envsubst < /config.template.json > /usr/share/nginx/html/config.json && nginx -g "daemon off;"'
