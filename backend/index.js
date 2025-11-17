@@ -24,23 +24,36 @@ const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = 'gpt-3.5-turbo';
 const MAX_TOKENS = 2000;
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
+// Determine database connection: Cloud SQL socket or localhost
+const dbConfig = {
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'Shay_Project',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
-});
+};
+
+// If DB_SOCKET_PATH is set, use Cloud SQL socket; otherwise use DB_HOST (or localhost)
+if (process.env.DB_SOCKET_PATH) {
+  dbConfig.socketPath = process.env.DB_SOCKET_PATH;
+} else {
+  dbConfig.host = process.env.DB_HOST || 'localhost';
+}
+
+const pool = mysql.createPool(dbConfig);
 
 // Startup environment validation (DB_NAME is optional)
 const requiredEnvs = [
-  { name: 'DB_HOST', value: process.env.DB_HOST },
   { name: 'DB_USER', value: process.env.DB_USER },
   { name: 'DB_PASSWORD', value: process.env.DB_PASSWORD },
   { name: 'OPENAI_API_KEY', value: process.env.OPENAI_API_KEY }
 ];
+
+// DB_HOST is required only if DB_SOCKET_PATH is not set (localhost mode)
+if (!process.env.DB_SOCKET_PATH && !process.env.DB_HOST) {
+  requiredEnvs.push({ name: 'DB_HOST (or DB_SOCKET_PATH for Cloud SQL)', value: process.env.DB_HOST });
+}
 
 const missing = requiredEnvs.filter(e => !e.value || e.value.toString().trim() === '').map(e => e.name);
 if (missing.length) {
@@ -54,13 +67,21 @@ const initDB = async () => {
   const dbName = process.env.DB_NAME || 'Shay_Project';
 
   // Create a temporary pool without a default database to ensure the DB exists
-  const tmpPool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
+  const tmpDbConfig = {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     waitForConnections: true,
     connectionLimit: 1
-  });
+  };
+
+  // Use socket path if available, otherwise use host
+  if (process.env.DB_SOCKET_PATH) {
+    tmpDbConfig.socketPath = process.env.DB_SOCKET_PATH;
+  } else {
+    tmpDbConfig.host = process.env.DB_HOST || 'localhost';
+  }
+
+  const tmpPool = mysql.createPool(tmpDbConfig);
 
   try {
     await tmpPool.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
