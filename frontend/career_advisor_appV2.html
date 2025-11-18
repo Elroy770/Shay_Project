@@ -241,6 +241,25 @@
         .error-message.active {
             display: block;
         }
+
+        .history-button {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            margin-top: 10px;
+        }
+
+        .history-button:hover {
+            background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .button-group button {
+            flex: 1;
+        }
     </style>
 </head>
 <body>
@@ -268,7 +287,10 @@
                 <p class="helper-text">כתוב לפחות 3-4 משפטים כדי שה-AI יוכל לנתח טוב יותר</p>
             </div>
 
-            <button type="submit" id="submitBtn">🔍 מצא מקצועות מתאימים</button>
+            <div class="button-group">
+                <button type="submit" id="submitBtn">🔍 מצא מקצועות מתאימים</button>
+                <button type="button" id="historyBtn" class="history-button" onclick="showHistory()">📜 היסטוריית חיפושים</button>
+            </div>
 
             <!-- הודעת טעינה -->
             <div class="loading" id="loading">
@@ -285,6 +307,12 @@
             <h2 style="color: #667eea; margin-bottom: 25px; text-align: center;">המקצועות המומלצים עבורך:</h2>
             <div id="careersContainer"></div>
             <button class="back-button" onclick="resetForm()">🔄 חיפוש חדש</button>
+        </div>
+
+        <!-- היסטוריה -->
+        <div id="historySection" style="display: none; margin-top: 30px;">
+            <h2 style="color: #667eea; margin-bottom: 25px; text-align: center;">היסטוריית חיפושים</h2>
+            <div id="historyContainer"></div>
         </div>
     </div>
 
