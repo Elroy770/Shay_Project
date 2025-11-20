@@ -1,13 +1,16 @@
-let API_URL = "";
+// Default to backend port used in local dev. If `config.json` is present it will override this.
+let API_URL = "http://localhost:3000";
 
 /** טוען את config.json כדי לקבל את כתובת ה-API */
 async function loadConfig() {
     try {
         const res = await fetch("config.json");
         const config = await res.json();
-        API_URL = config.API_URL;
+        // Only override if config contains a non-empty API_URL
+        if (config && config.API_URL && config.API_URL.trim()) API_URL = config.API_URL;
     } catch (err) {
-        console.error("Failed to load config.json:", err);
+        // Keep the sensible default (http://localhost:3000) when config.json cannot be loaded.
+        console.error("Failed to load config.json - using default API_URL:", err);
     }
 }
 
@@ -15,9 +18,13 @@ async function loadConfig() {
 async function getCareerRecommendations(userText) {
     if (!API_URL) await loadConfig();
 
+    const headers = { "Content-Type": "application/json" };
+    const token = localStorage.getItem('token');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
     const response = await fetch(`${API_URL}/api/career-recommendations`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ userText })
     });
 
@@ -28,6 +35,43 @@ async function getCareerRecommendations(userText) {
 
     return await response.json();
 }
+
+/* ------------------ Auth helpers ------------------ */
+
+
+function logout() {
+    localStorage.removeItem('token');
+    updateAuthUI();
+}
+
+function updateAuthUI() {
+    const token = localStorage.getItem('token');
+    const email = token ? (() => {
+        try { return JSON.parse(atob(token.split('.')[1])).email; } catch { return '' }
+    })() : '';
+
+    const loginLink = document.getElementById('loginLink');
+    const loggedInSection = document.getElementById('loggedInSection');
+    const userStatus = document.getElementById('userStatus');
+
+    if (token) {
+        if (loginLink) loginLink.style.display = 'none';
+        if (loggedInSection) loggedInSection.style.display = 'flex';
+        if (userStatus) userStatus.textContent = `מחובר כ־${email}`;
+    } else {
+        if (loginLink) loginLink.style.display = 'inline-block';
+        if (loggedInSection) loggedInSection.style.display = 'none';
+        if (userStatus) userStatus.textContent = '';
+    }
+}
+
+/* wire auth buttons */
+
+
+document.getElementById('logoutBtn').addEventListener('click', () => logout());
+
+// Initialize auth UI on load
+updateAuthUI();
 
 /** טעינת קובץ config.json בהתחלה */
 loadConfig();
@@ -118,7 +162,7 @@ async function showHistory() {
         historyContainer.innerHTML = "<p style='color:#667eea;'>טוען...</p>";
 
         const historyItems = await fetchHistory(20);
-        
+
         historyContainer.innerHTML =
             historyItems.length === 0
                 ? "<p style='text-align:center;color:#666;'>לא נמצאו רשומות בהיסטוריה</p>"

@@ -9,6 +9,8 @@ import express from 'express';
 import cors from 'cors';
 import fetch from 'node-fetch';
 import mysql from 'mysql2/promise';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 app.use(cors());
@@ -91,6 +93,9 @@ const initDB = async () => {
     const createTableJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
     const createTableText = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response LONGTEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
 
+    // Create users table (id, email unique, password_hash, created_at)
+    const createUsersJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.users (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+
     try {
       await pool.query(createTableJSON);
       console.log('Database and table (with JSON column) initialized successfully');
@@ -98,6 +103,12 @@ const initDB = async () => {
       console.warn('JSON column not supported, falling back to LONGTEXT for ai_response:', jsonErr.message);
       await pool.query(createTableText);
       console.log('Database and table (with LONGTEXT column) initialized successfully');
+    }
+    try {
+      await pool.query(createUsersJSON);
+      console.log('Users table initialized successfully');
+    } catch (userErr) {
+      console.error('Failed to create users table:', userErr.message);
     }
   } catch (error) {
     console.error('Database initialization error:', error);
@@ -204,6 +215,69 @@ app.post('/api/career-recommendations', async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 });
+
+// --- Authentication endpoints ---
+const JWT_SECRET = process.env.JWT_SECRET || 'replace_this_with_a_secure_random_value';
+const JWT_EXPIRES = process.env.JWT_EXPIRES || '7d';
+
+app.post('/api/signup', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password || password.length < 6) {
+      return res.status(400).json({ error: 'Email and password (>=6 chars) are required' });
+    }
+
+    const [rows] = await pool.query('SELECT id FROM users WHERE email = ? LIMIT 1', [email]);
+    if (rows.length) return res.status(409).json({ error: 'User already exists' });
+
+    const password_hash = await bcrypt.hash(password, 10);
+    const [result] = await pool.query('INSERT INTO users (email, password_hash) VALUES (?, ?)', [email, password_hash]);
+
+    const token = jwt.sign({ sub: result.insertId, email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.json({ token });
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
+
+    const [rows] = await pool.query('SELECT id, password_hash FROM users WHERE email = ? LIMIT 1', [email]);
+    if (!rows.length) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const user = rows[0];
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+
+    const token = jwt.sign({ sub: user.id, email }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
+    res.json({ token });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+// Middleware to protect endpoints
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization || '';
+  const m = header.match(/^Bearer (.+)$/);
+  if (!m) return res.status(401).json({ error: 'Missing token' });
+  const token = m[1];
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}
+
+// Example: protect history endpoint (optional). We'll allow anonymous access for now but show how to protect.
+// app.get('/api/history', authMiddleware, async (req, res) => { ... });
 
 app.get('/api/history', async (req, res) => {
   try {

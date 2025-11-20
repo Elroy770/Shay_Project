@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +24,7 @@
             margin: 0 auto;
             background: white;
             border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
             padding: 40px;
         }
 
@@ -144,8 +145,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         .loading-text {
@@ -174,7 +180,7 @@
 
         .career-card:hover {
             transform: translateX(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
         }
 
         .career-title {
@@ -262,34 +268,47 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🤖 יועץ קריירה AI</h1>
         <p class="subtitle">ספר לנו עליך ו-AI ימליץ על המקצועות המתאימים ביותר</p>
-        
+
+        <!-- Authentication UI -->
+        <!-- Authentication UI -->
+        <div id="authSection" style="margin-bottom: 20px; text-align: center;">
+            <a href="login.html" id="loginLink"
+                style="display: inline-block; padding: 10px 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">התחברות
+                / הרשמה</a>
+            <div id="loggedInSection" style="display: none; align-items: center; justify-content: center; gap: 10px;">
+                <div id="userStatus" style="color:#333;font-weight:600;"></div>
+                <button id="logoutBtn" type="button"
+                    style="background:#ff6b6b; padding: 8px 15px; font-size: 0.9em; width: auto;">התנתק</button>
+            </div>
+        </div>
+
         <form id="careerForm">
             <!-- תיבת מידע -->
             <div class="info-box">
                 <p><strong>איך זה עובד?</strong></p>
-                <p>כתוב טקסט חופשי על עצמך - מה אתה אוהב לעשות, מה הכישורים שלך, מה מעניין אותך, מה החוזקות והחלשות שלך.</p>
+                <p>כתוב טקסט חופשי על עצמך - מה אתה אוהב לעשות, מה הכישורים שלך, מה מעניין אותך, מה החוזקות והחלשות שלך.
+                </p>
                 <p>ה-AI ינתח את הטקסט ויציע לך 3 מקצועות מתאימים עם מסלול מפורט וטווח משכורות.</p>
             </div>
 
             <!-- אזור הטקסט החופשי -->
             <div class="form-group">
                 <label for="userText">ספר/י לנו על עצמך:</label>
-                <textarea 
-                    id="userText" 
-                    name="userText" 
+                <textarea id="userText" name="userText"
                     placeholder="לדוגמה: אני בן 25, אוהב מחשבים ולפתור בעיות מורכבות. למדתי מתמטיקה באוניברסיטה ויש לי ניסיון בתכנות Python. אני אדם אנליטי שנהנה לעבוד עם נתונים ולמצוא תבניות. אני מעדיף לעבוד באופן עצמאי אבל גם יודע לעבוד בצוות. אני מחפש תחום שבו אוכל לשלב יצירתיות עם חשיבה לוגית..."
-                    required
-                ></textarea>
+                    required></textarea>
                 <p class="helper-text">כתוב לפחות 3-4 משפטים כדי שה-AI יוכל לנתח טוב יותר</p>
             </div>
 
             <div class="button-group">
                 <button type="submit" id="submitBtn">🔍 מצא מקצועות מתאימים</button>
-                <button type="button" id="historyBtn" class="history-button" onclick="showHistory()">📜 היסטוריית חיפושים</button>
+                <button type="button" id="historyBtn" class="history-button" onclick="showHistory()">📜 היסטוריית
+                    חיפושים</button>
             </div>
 
             <!-- הודעת טעינה -->
@@ -318,4 +337,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>
