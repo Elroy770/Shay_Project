@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/api/hello", (req, res) => {
-    res.send("Hello from backend!");
+  res.send("Hello from backend!");
 });
 
 const PORT = process.env.PORT || 3000;
@@ -90,18 +90,30 @@ const initDB = async () => {
     await tmpPool.end();
 
     // Try to create table with JSON column; if the server doesn't support JSON, fall back to LONGTEXT
-    const createTableJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
-    const createTableText = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response LONGTEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+    const createTableJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, user_text LONGTEXT NOT NULL, ai_response JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
+    const createTableText = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NULL, user_text LONGTEXT NOT NULL, ai_response LONGTEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
 
     // Create users table (id, email unique, password_hash, created_at)
     const createUsersJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.users (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE, password_hash VARCHAR(255) NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
 
     try {
       await pool.query(createTableJSON);
+      // Add user_id column if it doesn't exist (for existing tables)
+      try {
+        await pool.query(`ALTER TABLE \`${dbName}\`.ai_requests ADD COLUMN user_id INT NULL AFTER id`);
+      } catch (e) {
+        // Ignore error if column already exists
+      }
       console.log('Database and table (with JSON column) initialized successfully');
     } catch (jsonErr) {
       console.warn('JSON column not supported, falling back to LONGTEXT for ai_response:', jsonErr.message);
       await pool.query(createTableText);
+      // Add user_id column if it doesn't exist (for existing tables)
+      try {
+        await pool.query(`ALTER TABLE \`${dbName}\`.ai_requests ADD COLUMN user_id INT NULL AFTER id`);
+      } catch (e) {
+        // Ignore error if column already exists
+      }
       console.log('Database and table (with LONGTEXT column) initialized successfully');
     }
     try {
@@ -179,7 +191,7 @@ async function callOpenAI(userText) {
     // Try to extract JSON from the content if direct parsing fails
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('לא התקבלה תשובה בפורמט JSON');
-    
+
     try {
       return JSON.parse(jsonMatch[0]);
     } catch (e2) {
@@ -193,17 +205,30 @@ app.post('/api/career-recommendations', async (req, res) => {
   try {
     const { userText } = req.body;
     if (!userText || userText.trim().length < 50) {
-      return res.status(400).json({ 
-        error: 'נא לכתוב טקסט ארוך יותר (לפחות 50 תווים)' 
+      return res.status(400).json({
+        error: 'נא לכתוב טקסט ארוך יותר (לפחות 50 תווים)'
       });
+    }
+
+    // Check for user ID from token (optional)
+    let userId = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        userId = payload.sub;
+      } catch (e) {
+        console.warn('Invalid token provided with request, proceeding as anonymous');
+      }
     }
 
     const aiParsed = await callOpenAI(userText);
 
     try {
       await pool.execute(
-        'INSERT INTO ai_requests (user_text, ai_response) VALUES (?, ?)',
-        [userText, JSON.stringify(aiParsed)]
+        'INSERT INTO ai_requests (user_id, user_text, ai_response) VALUES (?, ?, ?)',
+        [userId, userText, JSON.stringify(aiParsed)]
       );
     } catch (dbErr) {
       console.error('DB insert error:', dbErr);
@@ -276,17 +301,15 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// Example: protect history endpoint (optional). We'll allow anonymous access for now but show how to protect.
-// app.get('/api/history', authMiddleware, async (req, res) => { ... });
-
-app.get('/api/history', async (req, res) => {
+app.get('/api/history', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(100, parseInt(req.query.limit) || 20);
     const offset = parseInt(req.query.offset) || 0;
+    const userId = req.user.sub;
 
     const [rows] = await pool.query(
-      'SELECT id, user_text, ai_response, created_at FROM ai_requests ORDER BY created_at DESC LIMIT ? OFFSET ?',
-      [limit, offset]
+      'SELECT id, user_text, ai_response, created_at FROM ai_requests WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      [userId, limit, offset]
     );
 
     const normalized = rows.map(r => ({
@@ -305,5 +328,5 @@ app.get('/api/history', async (req, res) => {
 
 // Cloud Run חייב להאזין לכולם
 app.listen(PORT, "0.0.0.0", () => {
-    console.log("Backend listening on port", PORT);
+  console.log("Backend listening on port", PORT);
 });
