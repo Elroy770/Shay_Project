@@ -53,15 +53,18 @@ function updateAuthUI() {
     const loginLink = document.getElementById('loginLink');
     const loggedInSection = document.getElementById('loggedInSection');
     const userStatus = document.getElementById('userStatus');
+    const historyBtn = document.getElementById('historyBtn');
 
     if (token) {
         if (loginLink) loginLink.style.display = 'none';
         if (loggedInSection) loggedInSection.style.display = 'flex';
         if (userStatus) userStatus.textContent = `מחובר כ־${email}`;
+        if (historyBtn) historyBtn.style.display = 'block';
     } else {
         if (loginLink) loginLink.style.display = 'inline-block';
         if (loggedInSection) loggedInSection.style.display = 'none';
         if (userStatus) userStatus.textContent = '';
+        if (historyBtn) historyBtn.style.display = 'none';
     }
 }
 
@@ -119,8 +122,19 @@ function hideError() {
 async function fetchHistory(limit = 20) {
     if (!API_URL) await loadConfig();
 
+    const headers = {};
+    const token = localStorage.getItem('token');
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    } else {
+        // If no token, return empty array immediately as history is user-specific
+        return [];
+    }
+
     try {
-        const response = await fetch(`${API_URL}/api/history?limit=${limit}`);
+        const response = await fetch(`${API_URL}/api/history?limit=${limit}`, {
+            headers
+        });
         if (!response.ok) throw new Error("שגיאת שרת בהשגת היסטוריה");
 
         const data = await response.json();
