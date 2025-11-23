@@ -1,7 +1,4 @@
-Node_modules
-.env
-<<<<<<< HEAD
-backend/.env
-=======
 .DS_Store
->>>>>>> ac281d44dea4cb132aeba1207d44e5de47a52152
+backend/.env
+backend/node_modules
+.vscode
