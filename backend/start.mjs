@@ -1,6 +1,6 @@
 import mysql from 'mysql2/promise';
 
-const host = process.env.DB_HOST || 'localhost';
+const socketPath = process.env.DB_SOCKET_PATH || 'localsocketPath';
 const user = process.env.DB_USER || 'root';
 const password = process.env.DB_PASSWORD || '';
 const database = process.env.DB_NAME || 'Shay_Project';
@@ -11,17 +11,17 @@ const delayMs = parseInt(process.env.DB_CONNECT_DELAY_MS || '1000', 10);
 async function waitForDb() {
   for (let i = 1; i <= maxRetries; i++) {
     try {
-      const conn = await mysql.createConnection({ host, user, password, database });
+      const conn = await mysql.createConnection({ socketPath, user, password, database });
       await conn.ping();
       await conn.end();
-      console.log(`Connected to DB at ${host} (attempt ${i})`);
+      console.log(`Connected to DB at ${socketPath} (attempt ${i})`);
       return;
     } catch (err) {
       console.log(`Waiting for DB (${i}/${maxRetries}) - ${err.message}`);
       await new Promise(r => setTimeout(r, delayMs));
     }
   }
-  throw new Error(`Unable to connect to DB at ${host} after ${maxRetries} attempts`);
+  throw new Error(`Unable to connect to DB at ${socketPath} after ${maxRetries} attempts`);
 }
 
 try {
