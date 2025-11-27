@@ -9,8 +9,8 @@ gc create-sql:
 	--region=us-central1 \ 
 	--root-password=150721 \
 	--no-backup \
-	gcloud sql users set-password root \                                   ─╯
-    --host=% \
+	gcloud sql users set-password root \
+	--host=% \
     --instance=mysql-1 \
     --password=150721
 

@@ -27,8 +27,10 @@ const pool = mysql.createPool({
   database: process.env.DB_NAME || 'Shay_Project',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0
+  queueLimit: 0,
+  ssl: (process.env.DB_HOST && process.env.DB_HOST.includes('cloudsql')) ? { rejectUnauthorized: false } : undefined
 });
+
 
 // Startup environment validation (DB_NAME is optional)
 // Startup environment validation
@@ -145,7 +147,7 @@ async function callOpenAI(userText) {
     // Try to extract JSON from the content if direct parsing fails
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('לא התקבלה תשובה בפורמט JSON');
-    
+
     try {
       return JSON.parse(jsonMatch[0]);
     } catch (e2) {
@@ -159,8 +161,8 @@ app.post('/api/career-recommendations', async (req, res) => {
   try {
     const { userText } = req.body;
     if (!userText || userText.trim().length < 50) {
-      return res.status(400).json({ 
-        error: 'נא לכתוב טקסט ארוך יותר (לפחות 50 תווים)' 
+      return res.status(400).json({
+        error: 'נא לכתוב טקסט ארוך יותר (לפחות 50 תווים)'
       });
     }
 
