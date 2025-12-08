@@ -1,0 +1,43 @@
+steps:
+  # === שלב הבנייה (במקביל) ===
+  
+  # בניית Frontend
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Frontend'
+    args: ['build', '-t', '${_FE_IMAGE}', 'frontend/']
+    waitFor: ['-'] # המקף אומר: תתחיל מיד, אל תחכה לאף אחד
+
+  # בניית Backend
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Backend'
+    args: ['build', '-t', '${_BE_IMAGE}', 'backend/']
+    waitFor: ['-'] # תתחיל מיד (רץ במקביל לפרונט!)
+
+  # === שלב הדחיפה (אחרי שהבנייה מסתיימת) ===
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Frontend'
+    args: ['push', '${_FE_IMAGE}']
+    waitFor: ['Build Frontend']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Backend'
+    args: ['push', '${_BE_IMAGE}']
+    waitFor: ['Build Backend']
+
+  # === שלב הפריסה ===
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Frontend'
+    entrypoint: gcloud
+    args: ['run', 'deploy', 'shay-frontend', '--image', '${_FE_IMAGE}', '--region', '${_REGION}', '--allow-unauthenticated']
+    waitFor: ['Push Frontend']
+
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Backend'
+    entrypoint: gcloud
+    args: ['run', 'deploy', 'shay-backend', '--image', '${_BE_IMAGE}', '--region', '${_REGION}']
+    waitFor: ['Push Backend']
+
+substitutions:
+  _REGION: "us-central1"

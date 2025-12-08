@@ -1,0 +1,30 @@
+steps:
+  # 1. בניית האימג'
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Backend'
+    args: ['build', '-t', '${_IMAGE_NAME}', 'backend/']
+
+  # 2. דחיפה ל-Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Backend'
+    args: ['push', '${_IMAGE_NAME}']
+
+  # 3. פריסה ל-Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Backend'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'shay-backend'
+      - '--image'
+      - '${_IMAGE_NAME}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      # שים לב: לבקנד אין allow-unauthenticated ברירת מחדל בקוד הזה, 
+      # אלא אם כן נרצה להוסיף. כרגע זה מאובטח.
+
+substitutions:
+  _REGION: "us-central1"

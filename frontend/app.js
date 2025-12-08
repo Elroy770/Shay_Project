@@ -1,16 +1,21 @@
-// הגדרות API למול השרת המקומי
-// HOST is taken from a runtime-injected env (e.g. window.HOST) which should be
-// populated from your .env during deployment/build. If it's not present we
-// fall back to localhost behavior for development.
+// === התאם את ה-URL הזה! ===
+// ה-URL המלא והציבורי של שירות shay-backend ב-Cloud Run.
+const CLOUD_RUN_BACKEND_URL = 'https://shay-backend-152345784611.us-central1.run.app';
+// ==========================
+
+// הגדרת ה-HOST באופן דינמי
+// הקוד בודק קודם כל אם יש משתנה מוזרק (window.HOST). אם לא, הוא בודק את סביבת ההרצה:
 const HOST = (typeof window !== 'undefined' && window.HOST)
     ? window.HOST
-    : ((window.location.hostname === 'localhost' || window.location.hostname === '')
-        ? 'http://localhost:3000'
-        : `http://${window.location.hostname}:3000`);
+    : ((window.location.hostname === 'localhost' || window.location.hostname === '' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:3000' // עבודה לוקאלית: פונה לפורט 3000 המקומי
+        : CLOUD_RUN_BACKEND_URL); // עבודה בענן: פונה ל-URL הקבוע של שירות ה-Backend
 
 const API_CONFIG = {
+    // HOST הוא כבר ה-URL המלא (כולל HTTPS ופורט 443 משתמע)
     url: `${HOST}/api/career-recommendations`
 };
+
 
 
 
@@ -98,10 +103,9 @@ async function fetchHistory(limit = 20) {
     try {
         // Use the runtime HOST (injected from .env into window.HOST) with the
         // same fallback already defined at the top of the file.
-        const API_BASE_URL = HOST;
 
-        const response = await fetch(`${API_BASE_URL}/api/history?limit=${limit}`);
 
+        const response = await fetch(`${HOST}/api/history?limit=${limit}`);
         if (!response.ok) {
             throw new Error('שגיאת שרת בהשגת היסטוריה');
         }

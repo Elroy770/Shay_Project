@@ -20,53 +20,65 @@ const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = 'gpt-3.5-turbo';
 const MAX_TOKENS = 2000;
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+// === פונקציית עזר ליצירת קונפיגורציה ל-DB ===
+function getDbConfigBase() {
+  const dbHost = process.env.DB_HOST || 'localhost';
+  const config = {
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || '',
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+  };
+
+  // לוגיקה לזיהוי Cloud Run
+  if (dbHost.includes(':') && !dbHost.includes('127.0.0.1') && !dbHost.includes('localhost')) {
+    config.socketPath = dbHost.startsWith('/cloudsql/') ? dbHost : `/cloudsql/${dbHost}`;
+  } else {
+    config.host = dbHost;
+  }
+  return config;
+}
+
+// יצירת ה-Pool הראשי
+const poolConfig = {
+  ...getDbConfigBase(),
   database: process.env.DB_NAME || 'Shay_Project',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  ssl: (process.env.DB_HOST && process.env.DB_HOST.includes('cloudsql')) ? { rejectUnauthorized: false } : undefined
-});
+};
+const pool = mysql.createPool(poolConfig);
 
 
-// Startup environment validation (DB_NAME is optional)
 // Startup environment validation
 const requiredEnvs = [
   { name: 'DB_HOST', value: process.env.DB_HOST },
   { name: 'DB_USER', value: process.env.DB_USER },
   { name: 'DB_PASSWORD', value: process.env.DB_PASSWORD },
-  { name: 'DB_NAME', value: process.env.DB_NAME },
   { name: 'OPENAI_API_KEY', value: process.env.OPENAI_API_KEY }
 ];
 
 const missing = requiredEnvs.filter(e => !e.value || e.value.toString().trim() === '').map(e => e.name);
 if (missing.length) {
   console.error('Missing required environment variables:', missing.join(', '));
-  console.error('Please provide them via backend/.env or environment (see README_DOCKER.md)');
   process.exit(1);
 }
 
-// Initialize database: create the database if it doesn't exist, then create the table.
+// Initialize database
 const initDB = async () => {
   const dbName = process.env.DB_NAME || 'Shay_Project';
 
-  // Create a temporary pool without a default database to ensure the DB exists
-  const tmpPool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    waitForConnections: true,
+  // יצירת חיבור זמני ללא Database מוגדר כדי ליצור אותו אם צריך
+  const tmpConfig = {
+    ...getDbConfigBase(), // שימוש באותה לוגיקת חיבור חכמה
     connectionLimit: 1
-  });
+  };
+  const tmpPool = mysql.createPool(tmpConfig);
 
   try {
+    // יצירת הדאטה בייס
     await tmpPool.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
     await tmpPool.end();
 
-    // Try to create table with JSON column; if the server doesn't support JSON, fall back to LONGTEXT
+    // יצירת הטבלאות
     const createTableJSON = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response JSON NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
     const createTableText = `CREATE TABLE IF NOT EXISTS \`${dbName}\`.ai_requests (id INT AUTO_INCREMENT PRIMARY KEY, user_text LONGTEXT NOT NULL, ai_response LONGTEXT NOT NULL, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`;
 
@@ -74,7 +86,7 @@ const initDB = async () => {
       await pool.query(createTableJSON);
       console.log('Database and table (with JSON column) initialized successfully');
     } catch (jsonErr) {
-      console.warn('JSON column not supported, falling back to LONGTEXT for ai_response:', jsonErr.message);
+      console.warn('JSON column not supported, falling back to LONGTEXT:', jsonErr.message);
       await pool.query(createTableText);
       console.log('Database and table (with LONGTEXT column) initialized successfully');
     }
@@ -83,9 +95,9 @@ const initDB = async () => {
   }
 };
 
-// Initialize the database
 initDB().catch(console.error);
 
+// === שאר הקוד נשאר זהה ===
 async function callOpenAI(userText) {
   const response = await fetch(OPENAI_API_URL, {
     method: 'POST',
@@ -144,14 +156,11 @@ async function callOpenAI(userText) {
     return JSON.parse(content);
   } catch (e) {
     console.error('JSON parsing error:', e);
-    // Try to extract JSON from the content if direct parsing fails
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('לא התקבלה תשובה בפורמט JSON');
-
     try {
       return JSON.parse(jsonMatch[0]);
     } catch (e2) {
-      console.error('Second JSON parsing error:', e2);
       throw new Error('התקבל JSON לא תקין מה-API');
     }
   }

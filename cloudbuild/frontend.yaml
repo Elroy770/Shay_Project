@@ -1,0 +1,30 @@
+
+steps:
+  # 1. בניית האימג' (Docker Build)
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Build Frontend'
+    args: ['build', '-t', '${_IMAGE_NAME}', 'frontend/']
+
+  # 2. דחיפה ל-Artifact Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'Push Frontend'
+    args: ['push', '${_IMAGE_NAME}']
+
+  # 3. פריסה ל-Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'Deploy Frontend'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'shay-frontend'
+      - '--image'
+      - '${_IMAGE_NAME}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+
+substitutions:
+  _REGION: "us-central1"
